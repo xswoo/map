@@ -61,11 +61,15 @@ main{flex:1;min-height:0;position:relative}
 .pulse.tg{stroke:var(--text)}
 .tgdot{fill:var(--text)}
 .tlabel{fill:var(--text);font:700 15px Manrope,sans-serif;paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
-.panel{padding:12px 22px 6px;min-height:88px;display:flex;flex-direction:column;gap:10px;align-items:flex-start;justify-content:center}
+.panel{padding:8px 16px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.panel .row{flex-wrap:nowrap;gap:8px}
+.panel button{padding:10px 14px;font-size:.9rem;white-space:nowrap}
+.panel .row button:not(.icon){flex:1}
+.panel button.icon{flex:0 0 auto;padding:10px 16px}
 .panel p{margin:0;color:var(--body);font-size:.92rem;line-height:1.4}
 .row{display:flex;gap:10px;flex-wrap:wrap}
-#toast{min-height:1.2em;color:var(--text);font-size:.85rem}
-footer{padding:2px 22px calc(12px + env(safe-area-inset-bottom));color:var(--dim);font-size:.68rem;line-height:1.45}
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;max-width:90vw;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:8px 16px;color:var(--text);font-size:.85rem;text-align:center;pointer-events:none}
+#toast:empty{display:none}
 
 /* кнопки: звичайний / hover / натискання / фокус */
 button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:11px 20px;background:var(--accent);color:var(--on-accent);cursor:pointer;
@@ -131,10 +135,7 @@ button:disabled{opacity:.55;pointer-events:none}
 </main>
 <section class="panel" id="panel"><p>Завантаження…</p></section>
 <div id="sheet" hidden><div id="sheetBox"></div></div>
-<div id="toast" style="padding:0 22px"></div>
-<footer>
-  Дані: положення мітки й анонімний технічний ідентифікатор, а також фото і текст — якщо ви їх додали (їх бачать усі учасники). Пошук міст іде через відкритий сервіс Photon (OpenStreetMap), йому передається те, що ви вводите в пошуку.
-</footer>
+<div id="toast"></div>
 
 <script>
 // Публічні значення Supabase (publishable key — не таємний, так і треба)
@@ -287,18 +288,17 @@ async function load(){
 }
 
 // ---------- панель ----------
-function hereHtml(){ return target ? '<p>Знайдено: <b>' + esc(target.name) + '</b>. Поставити мітку тут?</p><div class="row"><button id="here">Поставити мітку тут</button></div>' : ""; }
+function hereHtml(){ return target ? '<div class="row"><button id="here">📍 ' + esc(target.name) + ' — поставити тут</button></div>' : ""; }
 function bindHere(){ const b = $("#here"); if (b) b.onclick = ()=>placePin({x:target.x, y:target.y}); }
 function ui(){
   const p = $("#panel");
   if (!me){
-    p.innerHTML = '<p>Торкніться карти там, де ваше рідне місто чи село. Карту можна наближати двома пальцями. Або знайдіть місце пошуком зверху.</p>' + hereHtml(); bindHere();
+    p.innerHTML = hereHtml() || '<p>Торкніться карти там, де ваше місто</p>'; bindHere();
   } else if (moveMode){
-    p.innerHTML = '<p>Торкніться нового місця на карті.</p>' + hereHtml() + '<div class="row"><button class="ghost" id="cn">Скасувати</button></div>'; bindHere();
+    p.innerHTML = hereHtml() + '<div class="row"><button class="ghost" id="cn">✕ Скасувати переміщення</button></div>'; bindHere();
     $("#cn").onclick = ()=>{ moveMode = false; ui(); };
   } else {
-    const has = me.photo_path || me.fact;
-    p.innerHTML = '<p>Готово! Ваша мітка — жовта, що пульсує. ' + (has ? 'Торкніться будь-якої мітки з фото чи кільцем, щоб подивитись.' : 'Додайте фото і цікавий факт про своє місто — мітка стане краплею з вашим фото.') + '</p><div class="row"><button id="ad">' + (has ? 'Змінити фото і факт' : 'Додати фото і факт') + '</button><button class="ghost" id="mv">Перемістити мітку</button><button class="danger" id="del">Видалити мітку</button></div>';
+    p.innerHTML = '<div class="row"><button id="ad">📷 Фото і факт</button><button class="ghost" id="mv">📍 Перемістити</button><button class="danger icon" id="del" aria-label="Видалити мітку" title="Видалити мітку">🗑</button></div>';
     $("#ad").onclick = openForm;
     $("#mv").onclick = ()=>{ moveMode = true; ui(); };
     $("#del").onclick = openDelete;
