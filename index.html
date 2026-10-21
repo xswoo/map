@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#050605">
+<meta name="theme-color" content="#050b18">
 <title>Звідки ми? — Карта рідних міст</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,70 +11,106 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
+:root{
+  /* ↓↓↓ Палітра бренду: змінюйте тільки ці значення ↓↓↓ */
+  --accent:#4f9bff;   /* основний синій */
+  --accent2:#ffd23f;  /* жовтий (ваша мітка, акценти) */
+  --bg:#050b18;       /* фон */
+  --land:#0b1630;     /* суходіл на карті */
+  --land-hi:#13244d;  /* наведення / активний стан */
+  --line:#1d3160;     /* рамки й кордони */
+  --text:#dbe8ff; --body:#8fb0e6; --muted:#6f8fc4; --dim:#4a6290; --cityl:#1f3563;
+  --chip:#0f1c3a; --on-accent:#04101f;
+}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0}
-body{background:#050605;color:#b6ff3b;font-family:Manrope,system-ui,sans-serif;display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+body{background:var(--bg);color:var(--accent);font-family:Manrope,system-ui,sans-serif;display:flex;flex-direction:column;height:100dvh;overflow:hidden}
 header{padding:calc(18px + env(safe-area-inset-top)) 22px 6px}
-h1{margin:0;color:#b6ff3b;font-size:clamp(2.2rem,10vw,3.6rem);font-weight:800;letter-spacing:-.03em;line-height:1}
-.sub{margin:8px 0 0;color:#6e8f2c;font-size:.9rem;line-height:1.4}
+h1{margin:0;color:var(--accent);font-size:clamp(2.2rem,10vw,3.6rem);font-weight:800;letter-spacing:-.03em;line-height:1}
+.sub{margin:8px 0 0;color:var(--muted);font-size:.9rem;line-height:1.4}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{background:var(--chip);color:var(--body);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:.82rem}
+.chip b{color:var(--accent2);font-variant-numeric:tabular-nums}
 main{flex:1;min-height:0;position:relative}
 #map{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none}
-#oblasts path,#islands path{fill:#0d120a!important;stroke:none!important}
-@media (hover:hover){#oblasts path:hover{fill:#162010!important}}
+#oblasts path,#islands path{fill:var(--land)!important;stroke:none!important}
+@media (hover:hover){#oblasts path:hover{fill:var(--land-hi)!important}}
 #oblasts path{transition:fill .25s}
-#borders{fill:none!important;stroke:#25361a!important;stroke-width:1.2px!important;vector-effect:non-scaling-stroke}
-#lakes,#water-gaps{fill:#050605!important;pointer-events:none}
+#borders{fill:none!important;stroke:var(--line)!important;stroke-width:1.2px!important;vector-effect:non-scaling-stroke}
+#lakes,#water-gaps{fill:var(--bg)!important;pointer-events:none}
 #rivers,#borders{pointer-events:none}
 #rivers{display:none}
 #city-labels{pointer-events:none}
-#city-labels text{fill:#2a3a1a;font-family:Manrope,sans-serif;font-weight:600}
+#city-labels text{fill:var(--cityl);font-family:Manrope,sans-serif;font-weight:600}
 .t0{font-size:46px}.t1{font-size:33px}.t2{font-size:29px}
 #pins{pointer-events:none}
 .dot{transform-box:fill-box;transform-origin:center;animation:pop .7s cubic-bezier(.2,.9,.3,1.2) both}
+.dot.drop{transform-origin:50% 100%}
 @keyframes pop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
-.ring{fill:none;stroke:#b6ff3b;stroke-opacity:.7;stroke-width:1.4}
-.pulse{fill:none;stroke:#b6ff3b;stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:pulse 2s ease-out infinite}
+.pf{fill:var(--accent);fill-opacity:.9}
+.pf2{fill:var(--accent2)}
+.pbg{fill:var(--bg)}
+.ring{fill:none;stroke:var(--accent2);stroke-opacity:.75;stroke-width:1.4}
+.fring{fill:none;stroke:var(--accent);stroke-opacity:.6;stroke-width:1.2}
+.pulse{fill:none;stroke:var(--accent2);stroke-width:1.5;transform-box:fill-box;transform-origin:center;animation:pulse 2s ease-out infinite}
 @keyframes pulse{from{opacity:.8;transform:scale(.6)}to{opacity:0;transform:scale(2.2)}}
+.drop-body{fill:var(--bg);stroke:var(--accent);stroke-width:2.4;stroke-linejoin:round}
+.dot.mine .drop-body{stroke:var(--accent2)}
+.shadow{fill:#000;fill-opacity:.45}
+.tg{fill:none;stroke:var(--text);stroke-width:2}
+.pulse.tg{stroke:var(--text)}
+.tgdot{fill:var(--text)}
+.tlabel{fill:var(--text);font:700 15px Manrope,sans-serif;paint-order:stroke;stroke:var(--bg);stroke-width:4px;stroke-linejoin:round}
 .panel{padding:12px 22px 6px;min-height:88px;display:flex;flex-direction:column;gap:10px;align-items:flex-start;justify-content:center}
-.panel p{margin:0;color:#7fa332;font-size:.92rem;line-height:1.4}
-.check{display:flex;gap:12px;align-items:flex-start;color:#a8d84a;font-size:.92rem;line-height:1.35;cursor:pointer}
-.check input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:#b6ff3b}
-.nudge{animation:shake .45s}
-@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:11px 20px;background:#b6ff3b;color:#050605;cursor:pointer}
-button.ghost{background:#121a0b;color:#b6ff3b}
+.panel p{margin:0;color:var(--body);font-size:.92rem;line-height:1.4}
 .row{display:flex;gap:10px;flex-wrap:wrap}
-#toast{min-height:1.2em;color:#e0ff9e;font-size:.85rem}
-footer{padding:2px 22px calc(12px + env(safe-area-inset-bottom));color:#43562b;font-size:.68rem;line-height:1.45}
+#toast{min-height:1.2em;color:var(--text);font-size:.85rem}
+footer{padding:2px 22px calc(12px + env(safe-area-inset-bottom));color:var(--dim);font-size:.68rem;line-height:1.45}
+
+/* кнопки: звичайний / hover / натискання / фокус */
+button{font:inherit;font-weight:600;border:0;border-radius:999px;padding:11px 20px;background:var(--accent);color:var(--on-accent);cursor:pointer;
+  transition:transform .15s ease,filter .15s ease,background .2s ease,box-shadow .2s ease}
+@media (hover:hover){button:hover{filter:brightness(1.12);transform:translateY(-1px);box-shadow:0 8px 20px -8px var(--accent)}}
+button:active{transform:translateY(0) scale(.96);filter:brightness(.94);box-shadow:none}
+button:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+button.ghost{background:var(--chip);color:var(--accent)}
+@media (hover:hover){button.ghost:hover{background:var(--land-hi);box-shadow:none;filter:none}}
+button.danger{background:#34131f;color:#ff9db1}
+@media (hover:hover){button.danger:hover{background:#46182a;box-shadow:0 8px 20px -10px #ff6b8a;filter:none}}
+button:disabled{opacity:.55;pointer-events:none}
+
 #pins .info{pointer-events:all;cursor:pointer}
-#sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.62)}
+#sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:rgba(2,6,16,.7)}
 #sheet[hidden]{display:none}
-#sheetBox{width:min(520px,100%);max-height:92dvh;overflow:auto;background:#0d120a;border:1px solid #25361a;border-radius:20px 20px 0 0;padding:18px 22px calc(18px + env(safe-area-inset-bottom))}
-#sheetBox h2{margin:0 0 12px;font-size:1.15rem;color:#b6ff3b}
-.pv{display:block;width:100%;max-height:46dvh;object-fit:contain;border-radius:12px;background:#050605;margin-bottom:12px}
-.fact{white-space:pre-wrap;color:#e0ff9e;line-height:1.45;margin:0 0 14px;font-size:1rem}
-#sheetBox textarea{width:100%;margin:12px 0 4px;padding:12px;border-radius:12px;border:1px solid #25361a;background:#050605;color:#e0ff9e;font:inherit;font-size:16px;resize:none}
-.note{margin:0 0 12px;color:#6e8f2c;font-size:.8rem}
-button:disabled{opacity:.6}
+#sheetBox{width:min(520px,100%);max-height:92dvh;overflow:auto;background:var(--land);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:18px 22px calc(18px + env(safe-area-inset-bottom))}
+#sheetBox h2{margin:0 0 12px;font-size:1.15rem;color:var(--accent)}
+.pv{display:block;width:100%;max-height:46dvh;object-fit:contain;border-radius:12px;background:var(--bg);margin-bottom:12px}
+.fact{white-space:pre-wrap;color:var(--text);line-height:1.45;margin:0 0 14px;font-size:1rem}
+#sheetBox textarea{width:100%;margin:12px 0 4px;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:16px;resize:none;outline:none;transition:border-color .2s}
+#sheetBox textarea:focus{border-color:var(--accent)}
+.note{margin:0 0 12px;color:var(--muted);font-size:.8rem}
+.note.big{font-size:.95rem;color:var(--body);margin-bottom:16px}
 .search{position:relative;padding:6px 22px 4px;z-index:20}
-#q{width:100%;padding:11px 16px;border-radius:999px;border:1px solid #25361a;background:#0d120a;color:#e0ff9e;font:inherit;font-size:16px;outline:none}
-#q:focus{border-color:#6e8f2c}
-#res{position:absolute;left:22px;right:22px;top:calc(100% - 2px);max-height:42dvh;overflow:auto;background:#0d120a;border:1px solid #25361a;border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.6)}
+#q{width:100%;padding:11px 16px;border-radius:999px;border:1px solid var(--line);background:var(--land);color:var(--text);font:inherit;font-size:16px;outline:none;transition:border-color .2s,box-shadow .2s}
+#q:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,155,255,.18)}
+#res{position:absolute;left:22px;right:22px;top:calc(100% - 2px);max-height:42dvh;overflow:auto;background:var(--land);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.6)}
 #res[hidden]{display:none}
-#res button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border-radius:0;background:transparent;color:#e0ff9e;text-align:left;padding:10px 16px;border-bottom:1px solid #162010;font-weight:600}
-#res button small{color:#6e8f2c;font-weight:400;font-size:.78rem}
-#res .msg{padding:12px 16px;color:#6e8f2c;font-size:.88rem}
-.tlabel{fill:#e0ff9e;font:700 15px Manrope,sans-serif;paint-order:stroke;stroke:#050605;stroke-width:4px;stroke-linejoin:round}
+#res button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;border-radius:0;background:transparent;color:var(--text);text-align:left;padding:10px 16px;border-bottom:1px solid var(--line);font-weight:600;box-shadow:none;filter:none}
+@media (hover:hover){#res button:hover{background:var(--land-hi);transform:none;box-shadow:none;filter:none}}
+#res button:active{background:var(--land-hi);transform:none}
+#res button small{color:var(--muted);font-weight:400;font-size:.78rem}
+#res .msg{padding:12px 16px;color:var(--muted);font-size:.88rem}
 </style>
 </head>
 <body>
 <header>
   <h1>Звідки ми?</h1>
   <p class="sub">Карта рідних міст нашого гуртожитку · 23 жовтня – 1 листопада</p>
+  <div class="stats"><span class="chip">👥 <b id="nP">0</b> <span id="lP">учасників</span></span><span class="chip">📍 ≈<b id="nC">0</b> <span id="lC">місць</span></span></div>
 </header>
 <div class="search"><input id="q" type="search" placeholder="🔍 Знайти місто чи село…" autocomplete="off" enterkeyhint="search"><div id="res" hidden></div></div>
 <main>
-<svg id="map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="87 56 3639 2438" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Карта України"><defs><radialGradient id="glow"><stop offset="0" stop-color="#b6ff3b" stop-opacity=".45"/><stop offset="1" stop-color="#b6ff3b" stop-opacity="0"/></radialGradient><clipPath id="sq"><rect x="-15" y="-15" width="30" height="30" rx="5"/></clipPath></defs><g id="zoomg">
+<svg id="map" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="87 56 3639 2438" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Карта України"><defs><radialGradient id="glow"><stop offset="0" style="stop-color:var(--accent)" stop-opacity=".45"/><stop offset="1" style="stop-color:var(--accent)" stop-opacity="0"/></radialGradient><clipPath id="dclip"><circle cx="0" cy="-26" r="13"/></clipPath></defs><g id="zoomg">
 <!-- palette: c0 #c3d0da, c1 #e7dcc0, c2 #aebfcc, c3 #f0eadb, ink #27333f -->
 
 
@@ -97,7 +133,7 @@ button:disabled{opacity:.6}
 <div id="sheet" hidden><div id="sheetBox"></div></div>
 <div id="toast" style="padding:0 22px"></div>
 <footer>
-  Дані: положення мітки й анонімний технічний ідентифікатор, а також фото і текст — якщо ви їх додали (їх бачать усі учасники). Пошук міст іде через відкритий сервіс Photon (OpenStreetMap), йому передається те, що ви вводите в пошуку. Видалимо всі дані після 1 листопада.
+  Дані: положення мітки й анонімний технічний ідентифікатор, а також фото і текст — якщо ви їх додали (їх бачать усі учасники). Пошук міст іде через відкритий сервіс Photon (OpenStreetMap), йому передається те, що ви вводите в пошуку.
 </footer>
 
 <script>
@@ -110,57 +146,90 @@ const $ = s => document.querySelector(s);
 const NS = "http://www.w3.org/2000/svg";
 const VB = {x:87, y:56, w:3639, h:2438};
 const svg = $("#map"), zg = $("#zoomg"), layer = $("#pins");
-let sb, uid = null, me = null, revealed = false, moveMode = false, T = d3.zoomIdentity, els = [];
+let sb, uid = null, me = null, revealed = false, moveMode = false, T = d3.zoomIdentity, els = [], target = null;
 window._others = [];
 const PATH_RE = /^[0-9a-f-]{36}\/\d+\.jpg$/;
+const DROP = "M0 0C-6-9-16-15-16-26a16 16 0 1 1 32 0C16-15 6-9 0 0Z";   // крапля: гострий кінець = точка на карті
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 function toast(t){ $("#toast").textContent = t; clearTimeout(toast.t); toast.t = setTimeout(()=>$("#toast").textContent="", 3500); }
 const thumbOf = p => p.replace(/\.jpg$/, "_t.jpg");
 const photoUrl = (p, thumb) => sb.storage.from(BUCKET).getPublicUrl(thumb ? thumbOf(p) : p).data.publicUrl;
+const pl = (n, f) => { const a = n % 100, b = n % 10; return (a > 10 && a < 15) ? f[2] : b === 1 ? f[0] : (b > 1 && b < 5) ? f[1] : f[2]; };
 
 // ---------- мітки (розмір у пікселях, не росте при zoom) ----------
 function place(o){
   const u = 1 / svg.getScreenCTM().a;
   o.g.setAttribute("transform", `translate(${T.applyX(o.sx)},${T.applyY(o.sy)}) scale(${u})`);
 }
-function mk(p, mine, delay){
+// розмір краплі: самотня — велика, у щільному місці — менша
+function dropScale(p, all){
+  let n = 0;
+  for (const o of all) if (o !== p && Math.hypot((o.x-p.x)*VB.w, (o.y-p.y)*VB.h) < 110) n++;
+  return n === 0 ? 1.45 : n < 3 ? 1.05 : n < 7 ? .85 : .7;
+}
+function mk(p, mine, delay, sc){
   const g = document.createElementNS(NS,"g"), d = document.createElementNS(NS,"g");
-  d.setAttribute("class","dot");
-  if (delay) d.style.animationDelay = delay + "ms";
   const hasPhoto = !!p.photo_path, hasFact = !!(p.fact && p.fact.trim());
-  let h = "";
+  d.setAttribute("class", "dot" + (hasPhoto ? " drop" : "") + (mine ? " mine" : ""));
+  if (delay) d.style.animationDelay = delay + "ms";
   if (hasPhoto){
-    if (mine) h += '<rect class="ring" x="-22" y="-22" width="44" height="44" rx="11"/><rect class="pulse" x="-22" y="-22" width="44" height="44" rx="11"/>';
-    h += '<rect x="-17" y="-17" width="34" height="34" rx="7" fill="#050605" stroke="#b6ff3b" stroke-width="2"/>';
-  } else if (mine){
-    h += '<circle class="ring" r="12"/><circle class="pulse" r="12"/><circle r="7" fill="#b6ff3b"/><circle r="2.6" fill="#050605"/>';
-  } else {
-    h += '<circle r="11" fill="url(#glow)"/><circle r="3.6" fill="#b6ff3b" fill-opacity=".85"/>';
-  }
-  if (hasFact && !hasPhoto) h += '<circle r="9" fill="none" stroke="#b6ff3b" stroke-opacity=".55" stroke-width="1.2"/>';
-  if (hasPhoto || hasFact) h += '<circle r="22" fill="transparent"/>';
-  d.innerHTML = h;
-  if (hasPhoto){
+    const gs = document.createElementNS(NS,"g");
+    gs.setAttribute("transform", "scale(" + sc + ")");
+    gs.innerHTML = (mine ? '<ellipse class="pulse" rx="13" ry="5"/>' : '') + '<ellipse class="shadow" rx="9" ry="3"/><path class="drop-body" d="' + DROP + '"/>';
     const im = document.createElementNS(NS,"image");
     im.setAttribute("href", photoUrl(p.photo_path, true));
-    im.setAttribute("x","-15"); im.setAttribute("y","-15");
-    im.setAttribute("width","30"); im.setAttribute("height","30");
-    im.setAttribute("preserveAspectRatio","xMidYMid slice");
-    im.setAttribute("clip-path","url(#sq)");
-    d.insertBefore(im, d.querySelector("circle[fill=transparent]"));
+    im.setAttribute("x","-13"); im.setAttribute("y","-39"); im.setAttribute("width","26"); im.setAttribute("height","26");
+    im.setAttribute("preserveAspectRatio","xMidYMid slice"); im.setAttribute("clip-path","url(#dclip)");
+    gs.appendChild(im);
+    const hit = document.createElementNS(NS,"circle");
+    hit.setAttribute("cy","-26"); hit.setAttribute("r","24"); hit.setAttribute("fill","transparent");
+    gs.appendChild(hit); d.appendChild(gs);
+  } else {
+    let h = mine
+      ? '<circle class="ring" r="12"/><circle class="pulse" r="12"/><circle class="pf2" r="7"/><circle class="pbg" r="2.6"/>'
+      : '<circle r="11" fill="url(#glow)"/><circle class="pf" r="3.6"/>';
+    if (hasFact) h += '<circle class="fring" r="9"/><circle r="22" fill="transparent"/>';
+    d.innerHTML = h;
   }
   g.appendChild(d); layer.appendChild(g);
   const o = {g, p, mine, sx: VB.x + p.x*VB.w, sy: VB.y + p.y*VB.h};
   if (hasPhoto || hasFact){ g.classList.add("info"); g.__o = o; }
   place(o); els.push(o);
 }
+function mkTarget(t){
+  const g = document.createElementNS(NS,"g");
+  g.innerHTML = '<circle class="tg" r="17"/><circle class="pulse tg" r="17"/><circle class="tgdot" r="2.5"/>';
+  const tx = document.createElementNS(NS,"text");
+  tx.setAttribute("y","-26"); tx.setAttribute("text-anchor","middle"); tx.setAttribute("class","tlabel"); tx.textContent = t.name;
+  g.appendChild(tx); layer.appendChild(g);
+  const o = {g, sx: VB.x + t.x*VB.w, sy: VB.y + t.y*VB.h}; place(o); els.push(o);
+}
 function draw(others){
   layer.innerHTML = ""; els = [];
+  const all = me ? others.concat([me]) : others;
   const step = Math.min(70, 3000 / Math.max(others.length,1));
-  others.forEach((p,i)=>mk(p,false, revealed ? 0 : i*step));
-  if (me) mk(me,true,0);
-  if (typeof target !== "undefined" && target) mkTarget(target);
+  others.slice().sort((a,b)=>a.y-b.y).forEach((p,i)=>mk(p, false, revealed ? 0 : i*step, dropScale(p, all)));
+  if (me) mk(me, true, 0, dropScale(me, all));
+  if (target) mkTarget(target);
   if (others.length) revealed = true;
+}
+
+// ---------- лічильники ----------
+function countTo(el, n){
+  const from = +el.textContent || 0; if (from === n) return;
+  const t0 = performance.now();
+  (function f(t){ const k = Math.min(1, (t-t0)/600); el.textContent = Math.round(from + (n-from)*k); if (k < 1) requestAnimationFrame(f); })(t0);
+}
+function stats(list){
+  const cs = [];
+  for (const p of list){
+    const X = p.x*VB.w, Y = p.y*VB.h;
+    if (!cs.some(c => Math.hypot(c[0]-X, c[1]-Y) < 35)) cs.push([X,Y]);   // мітки поруч вважаємо одним містом
+  }
+  countTo($("#nP"), list.length); countTo($("#nC"), cs.length);
+  $("#lP").textContent = pl(list.length, ["учасник","учасники","учасників"]);
+  $("#lC").textContent = pl(cs.length, ["місце","місця","місць"]);
 }
 
 // ---------- zoom / перетягування ----------
@@ -187,10 +256,8 @@ async function tap(e){
   if (me && !moveMode) return toast("Щоб змінити місце, натисніть «Перемістити мітку»");
   const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
   const s = pt.matrixTransform(svg.getScreenCTM().inverse()), c = T.invert([s.x, s.y]);
-  const np = {x: Math.min(1,Math.max(0,(c[0]-VB.x)/VB.w)), y: Math.min(1,Math.max(0,(c[1]-VB.y)/VB.h))};
-  return placePin(np);
+  return placePin({x: Math.min(1,Math.max(0,(c[0]-VB.x)/VB.w)), y: Math.min(1,Math.max(0,(c[1]-VB.y)/VB.h))});
 }
-
 async function placePin(np){
   if (!sb) return;
   target = null;
@@ -216,11 +283,11 @@ async function load(){
   const list = (g.data || []).map(clean), mine = list.find(r=>r.is_mine);
   me = mine || null;
   window._others = list.filter(r=>!r.is_mine);
-  draw(window._others); ui();
+  draw(window._others); ui(); stats(list);
 }
 
 // ---------- панель ----------
-function hereHtml(){ return (typeof target !== "undefined" && target) ? '<p>Знайдено: <b>' + String(target.name).replace(/[&<>"\']/g, c=>"&#"+c.charCodeAt(0)+";") + '</b>. Поставити мітку тут?</p><div class="row"><button id="here">Поставити мітку тут</button></div>' : ""; }
+function hereHtml(){ return target ? '<p>Знайдено: <b>' + esc(target.name) + '</b>. Поставити мітку тут?</p><div class="row"><button id="here">Поставити мітку тут</button></div>' : ""; }
 function bindHere(){ const b = $("#here"); if (b) b.onclick = ()=>placePin({x:target.x, y:target.y}); }
 function ui(){
   const p = $("#panel");
@@ -231,13 +298,14 @@ function ui(){
     $("#cn").onclick = ()=>{ moveMode = false; ui(); };
   } else {
     const has = me.photo_path || me.fact;
-    p.innerHTML = '<p>Готово! Ваша мітка — та, що пульсує. ' + (has ? 'Торкніться будь-якої мітки з фото чи кільцем, щоб подивитись.' : 'Додайте фото і цікавий факт про своє місто — мітка стане квадратиком із вашим фото.') + '</p><div class="row"><button id="ad">' + (has ? 'Змінити фото і факт' : 'Додати фото і факт') + '</button><button class="ghost" id="mv">Перемістити мітку</button></div>';
+    p.innerHTML = '<p>Готово! Ваша мітка — жовта, що пульсує. ' + (has ? 'Торкніться будь-якої мітки з фото чи кільцем, щоб подивитись.' : 'Додайте фото і цікавий факт про своє місто — мітка стане краплею з вашим фото.') + '</p><div class="row"><button id="ad">' + (has ? 'Змінити фото і факт' : 'Додати фото і факт') + '</button><button class="ghost" id="mv">Перемістити мітку</button><button class="danger" id="del">Видалити мітку</button></div>';
     $("#ad").onclick = openForm;
     $("#mv").onclick = ()=>{ moveMode = true; ui(); };
+    $("#del").onclick = openDelete;
   }
 }
 
-// ---------- вікно (перегляд / редагування) ----------
+// ---------- вікно (перегляд / редагування / видалення) ----------
 const sheet = $("#sheet"), box = $("#sheetBox");
 function closeSheet(){ sheet.hidden = true; box.innerHTML = ""; }
 sheet.addEventListener("click", e=>{ if (e.target === sheet) closeSheet(); });
@@ -253,6 +321,21 @@ function openCard(p, mine){
   if (mine){ const b = document.createElement("button"); b.textContent = "Змінити"; b.onclick = openForm; row.appendChild(b); }
   const c = document.createElement("button"); c.className = "ghost"; c.textContent = "Закрити"; c.onclick = closeSheet; row.appendChild(c);
   box.appendChild(row); sheet.hidden = false;
+}
+
+function openDelete(){
+  box.innerHTML = '<h2>Видалити мітку?</h2><p class="note big">Мітка, фото і факт зникнуть з карти. Потім можна поставити нову.</p><div class="row"><button class="danger" id="yes">Так, видалити</button><button class="ghost" id="no">Залишити</button></div>';
+  $("#no").onclick = closeSheet;
+  $("#yes").onclick = async ()=>{
+    const b = $("#yes"); b.disabled = true; b.textContent = "Видаляю…";
+    try {
+      const old = me && me.photo_path;
+      const {error} = await sb.rpc("delete_my_pin"); if (error) throw error;
+      if (old) sb.storage.from(BUCKET).remove([old, thumbOf(old)]).catch(()=>{});
+      me = null; moveMode = false; closeSheet(); await load(); toast("Мітку видалено.");
+    } catch(err){ console.error(err); b.disabled = false; b.textContent = "Так, видалити"; toast("Не вдалося видалити. Спробуйте ще раз."); }
+  };
+  sheet.hidden = false;
 }
 
 function resize(file, max, q, square){
@@ -320,25 +403,15 @@ function openForm(){
   sheet.hidden = false;
 }
 
-
 // ---------- пошук міст і сіл ----------
 const PX = lon => 196.6668*lon - 4227.988, PY = lat => -292.4281*lat + 15427.56;   // широта/довгота → координати карти
 const toPin = (lat, lon) => ({x:(PX(lon)-VB.x)/VB.w, y:(PY(lat)-VB.y)/VB.h});
 const CITIES = [["Київ",50.45,30.52],["Харків",49.99,36.23],["Одеса",46.48,30.73],["Дніпро",48.46,35.05],["Донецьк",48.02,37.80],["Запоріжжя",47.84,35.14],["Львів",49.84,24.03],["Миколаїв",46.97,32.00],["Луганськ",48.57,39.31],["Вінниця",49.23,28.47],["Севастополь",44.62,33.52],["Сімферополь",44.95,34.10],["Херсон",46.64,32.62],["Полтава",49.59,34.55],["Чернігів",51.50,31.29],["Черкаси",49.44,32.06],["Суми",50.91,34.80],["Житомир",50.25,28.66],["Хмельницький",49.42,26.99],["Рівне",50.62,26.25],["Чернівці",48.29,25.94],["Тернопіль",49.55,25.59],["Луцьк",50.75,25.33],["Ужгород",48.62,22.30],["Івано-Франківськ",48.92,24.71],["Кропивницький",48.51,32.26],["Кривий Ріг",47.91,33.39],["Маріуполь",47.10,37.54],["Кременчук",49.07,33.42],["Бердянськ",46.76,36.80],["Мелітополь",46.85,35.37],["Керч",45.36,36.48],["Ялта",44.50,34.17],["Ізмаїл",45.35,28.84]];
 const PLACES = new Set(["city","town","village","hamlet"]);
-let target = null, sTimer = null, sCtl = null;
+let sTimer = null, sCtl = null;
 const q = $("#q"), res = $("#res");
 const norm = s => String(s).toLowerCase().replace(/[’'`ʼ]/g,"").trim();
-const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
-function mkTarget(t){
-  const g = document.createElementNS(NS,"g");
-  g.innerHTML = '<circle r="17" fill="none" stroke="#e0ff9e" stroke-width="2"/><circle class="pulse" r="17" style="stroke:#e0ff9e"/><circle r="2.5" fill="#e0ff9e"/>';
-  const tx = document.createElementNS(NS,"text");
-  tx.setAttribute("y","-26"); tx.setAttribute("text-anchor","middle"); tx.setAttribute("class","tlabel"); tx.textContent = t.name;
-  g.appendChild(tx); layer.appendChild(g);
-  const o = {g, sx: VB.x + t.x*VB.w, sy: VB.y + t.y*VB.h}; place(o); els.push(o);
-}
 function flyTo(t){
   target = t;
   const sx = VB.x + t.x*VB.w, sy = VB.y + t.y*VB.h, k = 9;
